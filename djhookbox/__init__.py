@@ -21,11 +21,11 @@ def _server():
 apitoken = getattr(settings, 'HOOKBOX_REST_SECRET', None)
 
 def _url(method):
-    return '%s/rest/%s' % (_server(), method)
+    return '%s/web/%s' % (_server(), method)
 
 def _send(method, data):
     if apitoken:
-        data['secret'] = apitoken
+        data['security_token'] = apitoken
 
     try:
         req = urllib2.Request(_url(method), urllib.urlencode(data))
