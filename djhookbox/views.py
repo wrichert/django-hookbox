@@ -112,8 +112,15 @@ def webhook(method):
 def connect(request):
     signals['connect'].send(request.user)
     _call_callbacks('connect', request.user)
+
+    if request.user.is_authenticated():
+        username = request.user.username
+    else:
+        import random, string
+        username = ' _'+''.join(random.choice(string.letters + string.digits) for i in xrange(10))
+
     return {
-        'name': request.user.username
+        'name': username
     }
 
 @webhook
