@@ -26,9 +26,10 @@ class Command(NoArgsCommand):
         make_option('--cbhost', help = 'the callback host', metavar = 'HOST'),
         make_option('--cbport', help = 'the callback path prefix', metavar = 'PORT'),
         make_option('--cbpath', help = 'the callback path prefix [/hookbox]'),
-        make_option('-s', '--webhook-secret', help = 'callback secret token', metavar = 'SECRET'),
+#        make_option('-s', '--webhook-secret', help = 'callback secret token', metavar = 'SECRET'),
+        make_option('-w', '--web-api-port', help = 'bind web api listening socket to'),
 
-        make_option('-r', '--rest-secret', help = 'secret web API token', metavar = 'SECRET'),
+        make_option('-r', '--api-security-token', help = 'secret web API token', metavar = 'API'),
 
         make_option('-a', '--admin-password', help = 'administrator password', metavar = 'PASSWD'),
     )
@@ -38,14 +39,16 @@ class Command(NoArgsCommand):
     def start_hookbox(self, options, **kwargs):
         def addopt(args, opt):
             value = None
+            
             setvar = 'HOOKBOX_%s' % opt.replace('-', '_').upper()
-            if opt in options:
+            if opt.replace('-', '_') in options:
                 value = options.get(opt)
-            elif hasattr(settings, setvar):
-                value = getattr(settings, setvar)
+
+                if not value and hasattr(settings, setvar):
+                    value = getattr(settings, setvar)
 
             if value:
-                hbargs.extend(['--%s' % opt, value])
+                hbargs.extend(['--%s' % opt, str(value)])
 
         # TODO: Support runserver options for determining host/port
         hbargs = [options.get('executable'),
@@ -57,8 +60,8 @@ class Command(NoArgsCommand):
         addopt(hbargs, 'cbhost')
         addopt(hbargs, 'cbport')
         addopt(hbargs, 'cbpath')
-        addopt(hbargs, 'webhook-secret')
         addopt(hbargs, 'rest-secret')
+        addopt(hbargs, 'api-security-token')
         addopt(hbargs, 'admin-password')
 
         self.proc = subprocess.Popen(hbargs, **kwargs)

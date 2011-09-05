@@ -22,7 +22,7 @@ def _call_callbacks(op, *args, **kwargs):
         if result is None:
             result = oneresult
         elif not oneresult is None:
-            logger.warn("multiple results returned from %s callback", op)
+            logger.warn("multiple results returned from %s callback" % op)
     return result
 
 def whcallback(arg):
@@ -86,8 +86,6 @@ def webhook(method):
 
     @csrf_exempt
     def wrapper(*args, **kwargs):
-
-        # Process the request
         request = args[0]
         if secret is None or ('secret' in request.POST and request.POST['secret'] == secret):
             try:
@@ -106,13 +104,6 @@ def webhook(method):
                 result = [False, {'msg': str(err)}]
         else:
             result = [False, {'msg': 'webhook secret verification failed'}]
-
-        # Log the result
-        if result[0]:
-            logger.info("webhook succeeded: %s (%s): %s", method.__name__, request.user.username, str(result[1]))
-        else:
-            logger.warn("webhook failed: %s (%s): %s", method.__name__, request.user.username, result[1]['msg'])
-
         return HttpResponse(json.dumps(result), mimetype = 'application/json')
 
     return wrapper
@@ -146,5 +137,6 @@ def subscribe(request):
 
 @webhook
 def unsubscribe(request):
-    signals['unsubscribe'].send_robust(request.user, channel = request.POST['channel_name'])
-    return _call_callbacks('unsubscribe', request.user, channel = request.POST['channel_name'])
+    user = request.POST['user'] # request.user
+    signals['unsubscribe'].send_robust(user, channel = request.POST['channel_name'])
+    return _call_callbacks('unsubscribe', user, channel = request.POST['channel_name'])
