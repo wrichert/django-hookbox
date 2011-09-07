@@ -13,7 +13,7 @@ Requirements
 ============
 
     * Django 1.3+
-    * Hookbox 0.3.3
+    * Hookbox 0.3.4dev (https://github.com/hookbox/hookbox.git)
     * testfixtures 1.9.2+ (for unit tests)
 
 It should work with Django 1.2 and earlier versions of testfixtures, however it
