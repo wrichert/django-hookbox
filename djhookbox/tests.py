@@ -83,7 +83,7 @@ class TestServerThread(threading.Thread):
         class QuietWSGIRequestHandler(basehttp.WSGIRequestHandler):
             def log_message(self, format, *args):
                 if verbose:
-                    return super(QuietWSGIRequestHandler, self).log_message(self, format, *args)
+                    return basehttp.WSGIRequestHandler.log_message(self, format, *args)
 
         try:
             handler = basehttp.AdminMediaHandler(WSGIHandler())
@@ -187,8 +187,11 @@ class DjangoHookboxTest(TestCase):
 
         User.objects.create_user('a', 'a@example.com', 'a').save()
 
+        self.logcap = LogCapture()
+
     def tearDown(self):
         djhookbox.views._callbacks = self.old_cbs
+        self.logcap.uninstall()
 
     @server
     def test_implicit_create(self):
@@ -275,7 +278,7 @@ class DjangoHookboxTest(TestCase):
             'channel_name': 'a',
         }
 
-        response = self.client.post(reverse('hookbox_connect'), params)
+        response = self.client.post(connect_url, params)
         self.assertSuccess(response)
         self.assertAllCalls({'-': 1})
 
@@ -301,21 +304,22 @@ class DjangoHookboxTest(TestCase):
         def _cb_2(op, user, channel = '-'):
             return [True, {}]
 
-        with LogCapture() as log:
-            params = {'secret': djhookbox.views.secret}
+        params = {'secret': djhookbox.views.secret}
 
-            response = self.client.post(reverse('hookbox_connect'), params)
-            self.assertSuccess(response)
-            self.assertAllCalls({'-': 1})
+        logging.getLogger('djhookbox').setLevel(logging.WARNING)
 
-            response = self.client.post(reverse('hookbox_disconnect'), params)
-            self.assertSuccess(response)
-            self.assertAllCalls({'-': 2})
+        response = self.client.post(connect_url, params)
+        self.assertSuccess(response)
+        self.assertAllCalls({'-': 1})
 
-            log.check(
-                ('djhookbox', 'WARNING', 'multiple results returned from connect callback'),
-                ('djhookbox', 'WARNING', 'multiple results returned from disconnect callback'),
-            )
+        response = self.client.post(reverse('hookbox_disconnect'), params)
+        self.assertSuccess(response)
+        self.assertAllCalls({'-': 2})
+
+        self.logcap.check(
+            ('djhookbox', 'WARNING', 'multiple results returned from connect callback'),
+            ('djhookbox', 'WARNING', 'multiple results returned from disconnect callback'),
+        )
 
     def test_explicit_deny(self):
         response = self.client.post(reverse('hookbox_create_channel'), {
