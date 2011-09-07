@@ -117,6 +117,7 @@ def server(method):
             'cbport': str(nextport - 1),
             'port': str(nextport),
             'admin-password': 'admin',
+            'api-security-token': djhookbox.apitoken
         }, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
 
         # TODO: Retry at different port if cannot bind
@@ -230,7 +231,7 @@ class DjangoHookboxTest(TestCase):
             'channel_name': 'a',
         })
         data = self.decode(response)
-        self.assertFalse(data[0], 'webhook secret verification should have failed')
+        self.assertFalse(data[0], 'webhook secret verification should have failed (forgotton to set settings.HOOKBOX_WEBHOOK_SECRET?)')
 
         response = self.client.post(connect_url, {
             'channel_name': 'a',
