@@ -26,7 +26,7 @@ class Command(NoArgsCommand):
         make_option('--cbhost', help = 'the callback host', metavar = 'HOST'),
         make_option('--cbport', help = 'the callback path prefix', metavar = 'PORT'),
         make_option('--cbpath', help = 'the callback path prefix [/hookbox]'),
-#        make_option('-s', '--webhook-secret', help = 'callback secret token', metavar = 'SECRET'),
+        make_option('-s', '--webhook-secret', help = 'callback secret token', metavar = 'SECRET'),
         make_option('-w', '--web-api-port', help = 'bind web api listening socket to'),
 
         make_option('-r', '--api-security-token', help = 'secret web API token', metavar = 'API'),
@@ -60,7 +60,7 @@ class Command(NoArgsCommand):
         addopt(hbargs, 'cbhost')
         addopt(hbargs, 'cbport')
         addopt(hbargs, 'cbpath')
-        addopt(hbargs, 'rest-secret')
+        addopt(hbargs, 'webhook-secret')
         addopt(hbargs, 'api-security-token')
         addopt(hbargs, 'admin-password')
 
