@@ -9,6 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 import json
 import logging
+import random
+import string
 
 logger = logging.getLogger('djhookbox')
 secret = getattr(settings, 'HOOKBOX_WEBHOOK_SECRET', None)
@@ -116,7 +118,6 @@ def connect(request):
     if request.user.is_authenticated():
         username = request.user.username
     else:
-        import random, string
         username = ' _'+''.join(random.choice(string.letters + string.digits) for i in xrange(10))
 
     return {
@@ -144,6 +145,5 @@ def subscribe(request):
 
 @webhook
 def unsubscribe(request):
-    user = request.POST['user'] # request.user
-    signals['unsubscribe'].send_robust(user, channel = request.POST['channel_name'])
-    return _call_callbacks('unsubscribe', user, channel = request.POST['channel_name'])
+    signals['unsubscribe'].send_robust(request.user, channel = request.POST['channel_name'])
+    return _call_callbacks('unsubscribe', request.user, channel = request.POST['channel_name'])
