@@ -54,7 +54,7 @@ def create(channel, options):
 
 def publish(channel, payload):
     'Publish some data to a channel.'
-    
+
     _send('publish', {
         'channel_name': channel,
         'payload':      json.dumps(payload),
