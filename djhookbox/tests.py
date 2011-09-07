@@ -14,6 +14,7 @@ import djhookbox
 from djhookbox.management.commands import runhookbox
 
 import json
+import logging
 import os
 import random
 import re
