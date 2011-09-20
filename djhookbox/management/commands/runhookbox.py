@@ -21,30 +21,38 @@ class Command(NoArgsCommand):
                     help = 'hookbox executable', metavar = 'EXE'),
 
         make_option('-i', '--interface', help = 'the interface hookbox binds to'),
-        make_option('-p', '--port', help = 'the port hookbox binds to'),
+        make_option('-p', '--port',      help = 'the port hookbox binds to'),
 
         make_option('--cbhost', help = 'the callback host', metavar = 'HOST'),
         make_option('--cbport', help = 'the callback path prefix', metavar = 'PORT'),
         make_option('--cbpath', help = 'the callback path prefix [/hookbox]'),
-        make_option('-s', '--webhook-secret', help = 'callback secret token', metavar = 'SECRET'),
         make_option('-w', '--web-api-port', help = 'bind web api listening socket to'),
 
-        make_option('-r', '--api-security-token', help = 'secret web API token', metavar = 'API'),
-
-        make_option('-a', '--admin-password', help = 'administrator password', metavar = 'PASSWD'),
+        make_option('-s', '--webhook-secret',     help = 'callback secret token (passed to django by hookbox)', metavar = 'SECRET'),
+        make_option('-r', '--api-security-token', help = 'web API secret token (passed to hookbox by django)', metavar = 'SECRET'),
+        make_option('-a', '--admin-password',     help = 'hookbox administrator password', metavar = 'PASSWD'),
     )
 
     help = 'Start a hookbox server.'
 
     def start_hookbox(self, options, **kwargs):
         def addopt(args, opt):
-            value = None
-            
-            setvar = 'HOOKBOX_%s' % opt.replace('-', '_').upper()
-            if opt.replace('-', '_') in options:
-                value = options.get(opt)
+            """Adds a hookbox command-line argument.
 
-                if not value and hasattr(settings, setvar):
+            If an argument is specified on the runhookbox command-line, it is used.
+            Otherwise if an argument is specified in settings, it is used."""
+
+            value = None
+
+            # Command-line options are stored in attributes with dashes replaced by underscores
+            optvar = opt.replace('-', '_')
+
+            # Configuration settings match cmd-line option names,
+            # except uppercase and prefixed by HOOKBOX_
+            setvar = 'HOOKBOX_%s' % optvar.upper()
+
+            if not options.get(optvar) is None:
+                value = options.get(optvar)
                     value = getattr(settings, setvar)
 
             if value:
@@ -55,6 +63,7 @@ class Command(NoArgsCommand):
                   '--cbhost', 'localhost',
                   '--cbport', '8000']
 
+        # Add hookbox command-line arguments as required
         addopt(hbargs, 'port')
         addopt(hbargs, 'interface')
         addopt(hbargs, 'cbhost')

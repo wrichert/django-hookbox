@@ -1,6 +1,8 @@
 # Part of django-hookbox
 # Copyright 2011, Duane Griffin <duaneg@dghda.com>
 
+# TODO: We really need to mimic client-side connections to properly test things
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.handlers.wsgi import WSGIHandler
@@ -109,47 +111,49 @@ def server(method):
         # Start the test server
         server = TestServerThread('localhost', nextport)
         server.start()
-        nextport += 1
-
-        # Start hookbox
-        hookboxcmd = runhookbox.Command()
-        hookboxcmd.start_hookbox({
-            'executable': os.path.join(os.path.dirname(sys.executable), 'hookbox'),
-            'cbport': str(nextport - 1),
-            'port': str(nextport),
-            'admin-password': 'admin',
-            'api-security-token': djhookbox.apitoken
-        }, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
-
-        # TODO: Retry at different port if cannot bind
-        #       This will be tricky, however, since hookbox prints the
-        #       listening message *before* it binds...
-        output = hookboxcmd.proc.stdout.readline()
-        match = HOOKBOX_STARTED.search(output)
-        if not match:
-            hookboxcmd.proc.kill()
-            raise CommandError('Could not start hookbox server')
-
-        # Update hookbox settings to point to the running server
-        settings.HOOKBOX_PORT = nextport
-        nextport += 1
-
-        # Perform the tests
         try:
-            result = method(self, *args, **kwargs)
+            nextport += 1
+
+            # Start hookbox
+            hookboxcmd = runhookbox.Command()
+            hookboxcmd.start_hookbox({
+                'executable': os.path.join(os.path.dirname(sys.executable), 'hookbox'),
+                'cbport': str(nextport - 1),
+                'port': str(nextport),
+                'admin-password': 'admin',
+            'api-security-token': djhookbox.apitoken
+            }, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+
+            # TODO: Retry at different port if cannot bind
+            #       This will be tricky, however, since hookbox prints the
+            #       listening message *before* it binds...
+            output = hookboxcmd.proc.stdout.readline()
+            match = HOOKBOX_STARTED.search(output)
+            if not match:
+                hookboxcmd.proc.kill()
+                raise CommandError('Could not start hookbox server: %s' % output)
+
+            # Update hookbox settings to point to the running server
+            settings.HOOKBOX_PORT = nextport
+            nextport += 1
+
+            # Perform the tests
+            try:
+                result = method(self, *args, **kwargs)
+            finally:
+                hookboxcmd.stop_hookbox()
+                if verbose:
+                    for line in hookboxcmd.proc.stdout:
+                        print line.strip('\n')
+            return result
         finally:
-            hookboxcmd.stop_hookbox()
-            if verbose:
-                for line in hookboxcmd.proc.stdout:
-                    print line.strip('\n')
             server.stop()
-        return result
 
     return wrapper
 
 class DjangoHookboxTest(TestCase):
 
-    def _cb_all(self, op, user, channel = '-'):
+    def _cb_all(self, op, user, channel = '-', payload = None):
         if channel in self.all_calls:
             self.all_calls[channel] += 1
         else:
@@ -195,25 +199,18 @@ class DjangoHookboxTest(TestCase):
         self.logcap.uninstall()
 
     @server
-    def test_implicit_create(self):
+    def test_create(self):
+        self.assertRaises(djhookbox.HookboxError,
+            djhookbox.publish, '/a/', json.dumps({'foo': 'bar'}))
+
+        djhookbox.create('/a/')
         djhookbox.publish('/a/', json.dumps({'foo': 'bar'}))
-        self.assertAllCalls({'/a/': 1})
-        self.assertCreateCalls({'/a/': 1})
+
+        # TODO: Test send_hook works
+        # TODO: Confirm it actually did something
 
     @server
-    def test_unauth_create(self):
-        self.assertRaises(djhookbox.HookboxError,
-                          djhookbox.publish, '/b/', json.dumps({'foo': 'bar'}))
-        self.assertAllCalls({'/b/': 1})
-        self.assertCreateCalls({'/b/': 1})
-
-        self.assertRaises(djhookbox.HookboxError,
-                          djhookbox.publish, '/c/', json.dumps({'foo': 'bar'}))
-        self.assertAllCalls({'/b/': 1, '/c/': 1})
-        self.assertCreateCalls({'/b/': 1, '/c/': 1})
-
-    @server
-    def test_rest_secret(self):
+    def test_web_api_token(self):
         secret = djhookbox.apitoken
         try:
             djhookbox.apitoken += '...not!'
@@ -287,13 +284,21 @@ class DjangoHookboxTest(TestCase):
         self.assertSuccess(response)
         self.assertAllCalls({'-': 1, 'a': 1})
 
-        response = self.client.post(reverse('hookbox_destroy_channel'), params)
+        response = self.client.post(reverse('hookbox_publish'), {
+            'secret': djhookbox.views.secret,
+            'destination': 'a',
+            'payload': json.dumps(["Hello world"]),
+        })
         self.assertSuccess(response)
         self.assertAllCalls({'-': 1, 'a': 2})
 
+        response = self.client.post(reverse('hookbox_destroy_channel'), params)
+        self.assertSuccess(response)
+        self.assertAllCalls({'-': 1, 'a': 3})
+
         response = self.client.post(reverse('hookbox_disconnect'), params)
         self.assertSuccess(response)
-        self.assertAllCalls({'-': 2, 'a': 2})
+        self.assertAllCalls({'-': 2, 'a': 3})
 
     def test_warn_multiple_results(self):
 
