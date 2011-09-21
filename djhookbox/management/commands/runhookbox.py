@@ -53,7 +53,9 @@ class Command(NoArgsCommand):
 
             if not options.get(optvar) is None:
                 value = options.get(optvar)
-                    value = getattr(settings, setvar)
+
+            if not value and hasattr(settings, setvar):
+                value = getattr(settings, setvar)
 
             if value:
                 hbargs.extend(['--%s' % opt, str(value)])
