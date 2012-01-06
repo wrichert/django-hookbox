@@ -104,9 +104,11 @@ def webhook(method):
                     assert len(data) == 2
                     result = data
             except Exception as err:
+                logger.warn("Webhook exception: %s (GET=%s, POST=%s, COOKIES=%s)"%(err, request.GET, request.POST, request.COOKIES))
                 result = [False, {'msg': str(err)}]
         else:
             result = [False, {'msg': 'webhook secret verification failed'}]
+
         return HttpResponse(json.dumps(result), mimetype = 'application/json')
 
     return wrapper
