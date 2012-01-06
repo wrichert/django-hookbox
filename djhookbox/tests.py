@@ -113,7 +113,8 @@ def server(method):
         server.start()
         try:
             nextport += 1
-
+            #import pdb;pdb.set_trace()
+            
             # Start hookbox
             hookboxcmd = runhookbox.Command()
             hookboxcmd.start_hookbox({
@@ -121,7 +122,8 @@ def server(method):
                 'cbport': str(nextport - 1),
                 'port': str(nextport),
                 'admin-password': 'admin',
-            'api-security-token': djhookbox.apitoken
+                'api-security-token': djhookbox.apitoken,
+                'fail-publish-non-existing-channels': True
             }, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
 
             # TODO: Retry at different port if cannot bind
