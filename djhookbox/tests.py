@@ -286,7 +286,7 @@ class DjangoHookboxTest(TestCase):
 
         response = self.client.post(reverse('hookbox_publish'), {
             'secret': djhookbox.views.secret,
-            'destination': 'a',
+            'channel_name': 'a',
             'payload': json.dumps(["Hello world"]),
         })
         self.assertSuccess(response)
@@ -377,6 +377,7 @@ class DjangoHookboxTest(TestCase):
 
     def assertSuccess(self, response):
         data = self.decode(response)
+        
         if not data[0] and 'msg' in data[1]:
             self.fail(data[1]['msg'])
         else:
