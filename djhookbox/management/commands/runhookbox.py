@@ -31,7 +31,7 @@ class Command(NoArgsCommand):
         make_option('-s', '--webhook-secret',     help = 'callback secret token (passed to django by hookbox)', metavar = 'SECRET'),
         make_option('-r', '--api-security-token', help = 'web API secret token (passed to hookbox by django)', metavar = 'SECRET'),
         make_option('-a', '--admin-password',     help = 'hookbox administrator password', metavar = 'PASSWD'),
-        make_option('-f', '--fail-publish-non-existing-channels',     help = 'fail if publishing to a not existing channels', metavar = 'FAILNONEXISTINGCHANNEL'),
+        make_option('-x', '--ignore-publish-non-existing-channels',     help = 'ignore when publishing to a not existing channels', metavar = 'IGNOREEXISTINGCHANNEL'),
     )
 
     help = 'Start a hookbox server.'
@@ -75,7 +75,7 @@ class Command(NoArgsCommand):
         addopt(hbargs, 'webhook-secret')
         addopt(hbargs, 'api-security-token')
         addopt(hbargs, 'admin-password')
-        addopt(hbargs, 'fail-publish-non-existing-channels')
+        addopt(hbargs, 'ignore-publish-non-existing-channels')
 
         self.proc = subprocess.Popen(hbargs, **kwargs)
 

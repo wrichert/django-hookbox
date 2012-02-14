@@ -123,7 +123,7 @@ def server(method):
                 'port': str(nextport),
                 'admin-password': 'admin',
                 'api-security-token': djhookbox.apitoken,
-                'fail-publish-non-existing-channels': True
+                'ignore-publish-non-existing-channels': False 
             }, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
 
             # TODO: Retry at different port if cannot bind
